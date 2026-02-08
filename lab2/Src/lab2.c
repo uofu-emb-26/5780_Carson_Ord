@@ -23,7 +23,7 @@ int main(void)
  GPIO_InitTypeDef initPA0 = {GPIO_PIN_0,
                               GPIO_MODE_INPUT,
                               GPIO_PULLDOWN,
-                              GPIO_SPEED_FREQ_LOW,}; 
+                              GPIO_SPEED_FREQ_LOW}; 
 
   GPIO_InitTypeDef initPC6 = {GPIO_PIN_6,
                               GPIO_MODE_OUTPUT_PP,
@@ -37,7 +37,7 @@ int main(void)
   GPIO_InitTypeDef initPC8 = {GPIO_PIN_8,
                               GPIO_MODE_OUTPUT_PP,
                               GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW,};                                                      
+                              GPIO_SPEED_FREQ_LOW};                                                      
 
   GPIO_InitTypeDef initPC9 = {GPIO_PIN_9,
                             GPIO_MODE_OUTPUT_PP,
@@ -65,9 +65,9 @@ int main(void)
   assert(EXTI->FTSR == 0x0);
 
   __NVIC_EnableIRQ(SysTick_IRQn);
-  __NVIC_SetPriority(SysTick_IRQn, 2);
+  __NVIC_SetPriority(SysTick_IRQn, 3);
   __NVIC_EnableIRQ(EXTI0_1_IRQn);
-  __NVIC_SetPriority(EXTI0_1_IRQn, 1);
+  __NVIC_SetPriority(EXTI0_1_IRQn, 2);
 
   while (1)
   {
