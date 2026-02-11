@@ -1,5 +1,10 @@
 #include "main.h"
 #include "stm32f0xx_hal.h"
+#include <stm32f0xx_hal_gpio.h>
+#include "stm32f0xx_it.h"
+#include "assert.h"
+#include "hal_gpio.h"
+#include "timer.h"
 
 void SystemClock_Config(void);
 
@@ -9,17 +14,66 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  void EXTI0_1_IRQHandler(void);
   HAL_Init();
-  /* Configure the system clock */
   SystemClock_Config();
 
+  HAL_RCC_GPIOC_CLK_ENABLE(); 
+
+  GPIO_InitTypeDef initPC6 = {GPIO_PIN_6,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+ 
+  GPIO_InitTypeDef initPC8 = {GPIO_PIN_8,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};                                                      
+
+  GPIO_InitTypeDef initPC9 = {GPIO_PIN_9,
+                            GPIO_MODE_OUTPUT_PP,
+                            GPIO_NOPULL,
+                            GPIO_SPEED_FREQ_LOW};
+ 
+  My_HAL_GPIO_Init(GPIOC, &initPC6);
+  My_HAL_GPIO_Init(GPIOC, &initPC8);
+  My_HAL_GPIO_Init(GPIOC, &initPC9);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+  
+  timer2Setup();
+    
   while (1)
   {
- 
+    //My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+    //HAL_Delay(600);
   }
   return -1;
 }
+
+/**
+* @brief Enable AHB peripheral clock register on GPIOC
+*/
+void HAL_RCC_GPIOC_CLK_ENABLE() 
+{
+    RCC->AHBENR |= RCC_AHBENR_GPIOCEN; 
+}
+
+/**
+* @brief Enable AHB peripheral clock register on GPIOA
+*/
+void HAL_RCC_GPIOA_CLK_ENABLE() 
+{
+    RCC->AHBENR |= RCC_AHBENR_GPIOAEN; 
+}
+
+void HAL_RCC_SYSCFG_CLK_ENABLE()
+{
+  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN;
+}
+
+
 
 /**
   * @brief System Clock Configuration
@@ -82,4 +136,8 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* User can add their own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
 }
+
+
+
+
 #endif /* USE_FULL_ASSERT */
