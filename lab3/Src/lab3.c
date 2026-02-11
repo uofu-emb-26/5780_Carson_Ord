@@ -43,6 +43,7 @@ int main(void)
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
   
   timer2Setup();
+  timer3Setup();
     
   while (1)
   {
