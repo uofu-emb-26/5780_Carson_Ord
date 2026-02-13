@@ -6,6 +6,10 @@ extern "C" {
 #endif
 
 void Error_Handler(void);
+void alternateLED(void);
+void HAL_RCC_GPIOC_CLK_ENABLE(void);
+void HAL_RCC_GPIOA_CLK_ENABLE(void);
+void HAL_RCC_SYSCFG_CLK_ENABLE(void);
 
 #ifdef __cplusplus
 }

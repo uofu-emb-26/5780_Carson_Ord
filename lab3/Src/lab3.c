@@ -21,10 +21,14 @@ int main(void)
   HAL_RCC_GPIOC_CLK_ENABLE(); 
 
   GPIO_InitTypeDef initPC6 = {GPIO_PIN_6,
-                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_MODE_AF_PP,
                               GPIO_NOPULL,
                               GPIO_SPEED_FREQ_LOW};
- 
+  GPIO_InitTypeDef initPC7 = {GPIO_PIN_7,
+                              GPIO_MODE_AF_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+
   GPIO_InitTypeDef initPC8 = {GPIO_PIN_8,
                               GPIO_MODE_OUTPUT_PP,
                               GPIO_NOPULL,
@@ -36,22 +40,38 @@ int main(void)
                             GPIO_SPEED_FREQ_LOW};
  
   My_HAL_GPIO_Init(GPIOC, &initPC6);
+  My_HAL_GPIO_Init(GPIOC, &initPC7);
+
   My_HAL_GPIO_Init(GPIOC, &initPC8);
   My_HAL_GPIO_Init(GPIOC, &initPC9);
+  
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
   
   timer2Setup();
   timer3Setup();
+  alternateLED();
     
   while (1)
   {
     //My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
     //HAL_Delay(600);
+    // Example "Breathe" loop for efficiency
+    /*
+    for (int i = 0; i <= 800; i += 10) {
+        TIM3->CCR1 = i;
+        TIM3->CCR2 = i;
+        HAL_Delay(20); // Smooth transition
+  }
+        */
   }
   return -1;
 }
+
+
+
 
 /**
 * @brief Enable AHB peripheral clock register on GPIOC
@@ -73,8 +93,6 @@ void HAL_RCC_SYSCFG_CLK_ENABLE()
 {
   RCC->APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN;
 }
-
-
 
 /**
   * @brief System Clock Configuration
