@@ -32,8 +32,8 @@ void timer3Setup()
     TIM3->CCMR1 |= 0x800; //Preload enable 2
     TIM3->CCER |= 0x1; // Output enable bit channel 1
     TIM3->CCER |= 0x10; // Output enable bit channel 2
-    TIM3->CCR1 = 126; // Higher = dimmer
-    TIM3->CCR2 = 126; // Higher = brighter
+    TIM3->CCR1 = 1; // Higher = dimmer
+    TIM3->CCR2 = 125; // Higher = brighter
     TIM3->CR1 |= TIM_CR1_CEN;
 }
 

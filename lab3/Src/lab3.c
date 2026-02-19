@@ -58,14 +58,6 @@ int main(void)
   {
     //My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
     //HAL_Delay(600);
-    // Example "Breathe" loop for efficiency
-    /*
-    for (int i = 0; i <= 800; i += 10) {
-        TIM3->CCR1 = i;
-        TIM3->CCR2 = i;
-        HAL_Delay(20); // Smooth transition
-  }
-        */
   }
   return -1;
 }
