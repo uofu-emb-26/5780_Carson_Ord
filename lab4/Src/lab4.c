@@ -8,9 +8,11 @@
 
 void SystemClock_Config(void);
 
-
-volatile char recRegVal;
-volatile uint16_t newDataFlag;
+volatile char tempChar;
+volatile char firstChar;
+volatile char secondChar;
+volatile uint16_t charCount;
+volatile uint16_t newDataFlag = 0;
 
 /**
   * @brief  The application entry point.
@@ -41,8 +43,6 @@ int main(void)
                               GPIO_MODE_OUTPUT_PP,
                               GPIO_NOPULL,
                               GPIO_SPEED_FREQ_LOW}; 
-
-
   GPIO_InitTypeDef initPB10 = {GPIO_PIN_10,
                               GPIO_MODE_AF_PP,
                               GPIO_NOPULL,
@@ -50,14 +50,15 @@ int main(void)
   GPIO_InitTypeDef initPB11 = {GPIO_PIN_11,
                               GPIO_MODE_AF_PP,
                               GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW};                                                       
+                              GPIO_SPEED_FREQ_LOW};    
+
   My_HAL_GPIO_Init(GPIOC, &initPC6);
   My_HAL_GPIO_Init(GPIOC, &initPC7);
   My_HAL_GPIO_Init(GPIOC, &initPC8);
   My_HAL_GPIO_Init(GPIOC, &initPC9);
-
   My_HAL_GPIO_Init(GPIOB, &initPB10);
   My_HAL_GPIO_Init(GPIOB, &initPB11);
+
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
@@ -65,17 +66,17 @@ int main(void)
 
   while (1)
   {
-    
     if (newDataFlag)
     {
-      toggle_LED();
       newDataFlag = 0;
+      command_parser();
     }
-    //My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-    //HAL_Delay(600);
+    
     //transmit_char('A');
     //transmit_string("This is a Test \n\0");
-   
+
+    //My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+    //HAL_Delay(600);
   }
   return -1;
 }
@@ -128,8 +129,92 @@ void USART3_4_IRQHandler(void)
 {
   if (USART3->ISR & USART_ISR_RXNE)
   {
-    recRegVal = (char)USART3->RDR;
-    newDataFlag = 1;
+    tempChar = (char)USART3->RDR;
+    if (tempChar < 32) return;
+    if (charCount == 0)
+    {
+      transmit_string("First Char\n");
+      firstChar = tempChar;
+      charCount = 1; 
+    }
+    else if (charCount == 1)
+    {
+      secondChar = tempChar;
+      charCount = 0;
+      newDataFlag = 1;
+      transmit_string("Second Char\n");
+    }
+  }
+}
+
+
+void command_parser(void)
+{
+  //transmit_string("CMD?\n");
+  switch(firstChar) {
+  case 'r':
+    switch(secondChar) {
+      case '0':
+        My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+        break;
+      case '1':
+        My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+        break;
+      case '2':
+        My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+        break;
+      default:
+        transmit_string("Error");
+    }
+    break;
+  case 'b':
+    switch(secondChar) {
+      case '0':
+        My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+        break;
+      case '1':
+        My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
+        break;
+      case '2':
+        My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+        break;
+      default:
+        transmit_string("Error");
+    }
+    break;
+  case 'o':
+   switch(secondChar) {
+      case '0':
+        My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+        break;
+      case '1':
+        My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+        break;
+      case '2':
+        My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+        break;
+      default:
+        transmit_string("Error");
+    }
+    break;
+  case 'g':
+    switch(secondChar) {
+      case '0':
+        My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+        break;
+      case '1':
+        My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+        break;
+      case '2':
+        My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+        break;
+      default:
+        transmit_string("Error");
+    }
+    break;
+  default:
+    transmit_string("Error! No LED exists of that color");
+    break;
   }
 }
 
@@ -156,7 +241,7 @@ void toggle_LED(void)
   //data = USART3->RDR;
 
 
-  switch(recRegVal) {
+  switch(firstChar) {
   case 'r':
     My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
     break;
@@ -174,6 +259,9 @@ void toggle_LED(void)
     break;
   }
 }
+
+
+
 
 /**
   * @brief System Clock Configuration
