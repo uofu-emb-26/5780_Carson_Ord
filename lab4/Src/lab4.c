@@ -14,8 +14,9 @@ int main(void)
 {
   HAL_Init();
   SystemClock_Config();
-  HAL_RCC_GPIOC_CLK_ENABLE(); 
+  HAL_RCC_GPIO_CLK_ENABLE(); 
   configure_GPIO_AFR();
+  initialize_USART();
 
   GPIO_InitTypeDef initPC6 = {GPIO_PIN_6,
                               GPIO_MODE_OUTPUT_PP,
@@ -34,10 +35,13 @@ int main(void)
   My_HAL_GPIO_Init(GPIOB, &initPB11);
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
 
+  
   while (1)
   {
     My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
     HAL_Delay(600);
+    transmit_char('A');
+   
   }
   return -1;
 }
@@ -65,7 +69,11 @@ void initialize_USART(void)
   USART3->CR1 |= USART_CR1_UE; // USART Enable
 }
 
-
+void transmit_char(char character)
+{
+  while (!(USART3->ISR & USART_ISR_TXE)) { }
+  USART3->TDR = character;
+}
 
 
 

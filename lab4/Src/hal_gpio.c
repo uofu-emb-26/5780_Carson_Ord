@@ -49,22 +49,12 @@ void Button_To_EXTI(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 }
 
 /**
-* @brief Enable AHB peripheral clock register on GPIOC
+* @brief Enable AHB peripheral clock registerS
 */
-void HAL_RCC_GPIOC_CLK_ENABLE() 
+void HAL_RCC_GPIO_CLK_ENABLE() 
 {
-    RCC->AHBENR |= RCC_AHBENR_GPIOCEN; 
-}
-
-/**
-* @brief Enable AHB peripheral clock register on GPIOA
-*/
-void HAL_RCC_GPIOA_CLK_ENABLE() 
-{
-    RCC->AHBENR |= RCC_AHBENR_GPIOAEN; 
-}
-
-void HAL_RCC_SYSCFG_CLK_ENABLE()
-{
-  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN;
+    RCC->AHBENR |= RCC_AHBENR_GPIOAEN; // GPIOA
+    RCC->AHBENR |= RCC_AHBENR_GPIOBEN; // GPIOB
+    RCC->AHBENR |= RCC_AHBENR_GPIOCEN; // GPIOC
+    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN; // SYSCFG
 }

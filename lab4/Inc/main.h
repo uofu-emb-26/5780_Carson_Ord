@@ -8,6 +8,7 @@ extern "C" {
 void Error_Handler(void);
 void configure_GPIO_AFR(void);
 void initialize_USART(void);
+void transmit_char(char character);
 
 #ifdef __cplusplus
 }
