@@ -12,6 +12,7 @@ volatile char tempChar;
 volatile char firstChar;
 volatile char secondChar;
 volatile uint16_t charCount;
+volatile uint16_t promptCount;
 volatile uint16_t newDataFlag = 0;
 
 /**
@@ -66,20 +67,35 @@ int main(void)
 
   while (1)
   {
+    // Checkoff 1
+    //toggle_LED(); 
+
+
+    // Checkoff 2
+    
+    if ((promptCount == 0) && newDataFlag != 1)
+    {
+      transmit_string("Select LED:\n");
+      promptCount = 3;
+    }
+    else if (promptCount == 1)
+    {
+       transmit_string("Select Action:\n");
+       promptCount = 2;
+    }
+
     if (newDataFlag)
     {
       newDataFlag = 0;
       command_parser();
     }
     
-    //transmit_char('A');
-    //transmit_string("This is a Test \n\0");
-
-    //My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
-    //HAL_Delay(600);
   }
   return -1;
 }
+
+// ================= Required Functions =================
+
 
 void configure_GPIO_AFR(void)
 {
@@ -90,6 +106,25 @@ void configure_GPIO_AFR(void)
   GPIOB->AFR[1] |= (0x4 << ( 3 * 4 )); // PB11
 }
 
+void transmit_char(char character)
+{
+  while (!(USART3->ISR & USART_ISR_TXE)) {}
+  USART3->TDR = character;
+}
+
+void transmit_string(char* string)
+{
+  while (*string != 0)
+  {
+    transmit_char(*string++);
+  } 
+  return;
+}
+
+// ==============================================
+
+
+// ================= Checkoff 1 =================
 /*
 void initialize_USART(void)
 {
@@ -104,7 +139,38 @@ void initialize_USART(void)
   USART3->CR1 |= USART_CR1_RE; // Receiver Enable
   USART3->CR1 |= USART_CR1_UE; // USART Enable
 }
-*/ 
+
+
+void toggle_LED(void)
+{
+  uint16_t data;
+  while (!(USART3->ISR & USART_ISR_RXNE)) {} 
+  data = USART3->RDR;
+
+  switch(data) {
+  case 'r':
+    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+    break;
+  case 'b':
+    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+    break;
+  case 'o':
+    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+    break;
+  case 'g':
+    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+    break;
+  default:
+    transmit_string("Error! No LED exists of that color");
+    break;
+  }
+}
+*/
+// ==============================================
+
+
+// ================= Checkoff 2 =================
+
 
 void initialize_USART(void)
 {
@@ -116,13 +182,13 @@ void initialize_USART(void)
 
   USART3->CR1 |= USART_CR1_TE; // Transmitter Enable
   USART3->CR1 |= USART_CR1_RE; // Receiver Enable
-  USART3->CR1 |= USART_CR1_RXNEIE; // Receive Register Not Empty Interrupt
+  USART3->CR1 |= USART_CR1_RXNEIE; // Receive Register Not Empty Interrupt Enable
   USART3->CR1 |= USART_CR1_UE; // USART Enable
 
   __NVIC_EnableIRQ(USART3_4_IRQn);
   __NVIC_SetPriority(USART3_4_IRQn, 3);
-
 }
+
 
 
 void USART3_4_IRQHandler(void) 
@@ -133,16 +199,30 @@ void USART3_4_IRQHandler(void)
     if (tempChar < 32) return;
     if (charCount == 0)
     {
-      transmit_string("First Char\n");
       firstChar = tempChar;
-      charCount = 1; 
+      if (((firstChar != 'r') && (firstChar != 'g') && (firstChar != 'b') &&(firstChar != 'o')))
+      {
+        charCount = 0;
+        promptCount = 0;
+        transmit_string("Error! No LED exists of that color\n");
+        return;
+      }
+      charCount = 1;
+      promptCount = 1;
+      
     }
     else if (charCount == 1)
     {
       secondChar = tempChar;
+      if ((secondChar != '0') && (secondChar != '1') && (secondChar != '2'))
+      {
+        charCount = 0;
+        promptCount = 0;
+        transmit_string("Error! That is not a valid action\n");
+      }
       charCount = 0;
       newDataFlag = 1;
-      transmit_string("Second Char\n");
+      promptCount = 0;
     }
   }
 }
@@ -164,7 +244,7 @@ void command_parser(void)
         My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
         break;
       default:
-        transmit_string("Error");
+        break;
     }
     break;
   case 'b':
@@ -179,7 +259,7 @@ void command_parser(void)
         My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
         break;
       default:
-        transmit_string("Error");
+        break;
     }
     break;
   case 'o':
@@ -194,7 +274,7 @@ void command_parser(void)
         My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
         break;
       default:
-        transmit_string("Error");
+        break;
     }
     break;
   case 'g':
@@ -209,56 +289,22 @@ void command_parser(void)
         My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
         break;
       default:
-        transmit_string("Error");
+        break;
     }
     break;
   default:
-    transmit_string("Error! No LED exists of that color");
     break;
   }
 }
 
 
-void transmit_char(char character)
-{
-  while (!(USART3->ISR & USART_ISR_TXE)) {}
-  USART3->TDR = character;
-}
 
-void transmit_string(char* string)
-{
-  while (*string != 0)
-  {
-    transmit_char(*string++);
-  } 
-  return;
-}
-
-void toggle_LED(void)
-{
-  //uint16_t data;
-  //while (!(USART3->ISR & USART_ISR_RXNE)) {}
-  //data = USART3->RDR;
+// ======================================================
 
 
-  switch(firstChar) {
-  case 'r':
-    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-    break;
-  case 'b':
-    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
-    break;
-  case 'o':
-    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
-    break;
-  case 'g':
-    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
-    break;
-  default:
-    transmit_string("Error! No LED exists of that color");
-    break;
-  }
-}
+
+
+
 
 
 
