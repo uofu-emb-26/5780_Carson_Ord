@@ -3,6 +3,7 @@
 #include <stm32f0xx_hal_conf.h>
 #include "hal_gpio.h"
 #include "hal_gpio.c"
+#include <stdio.h>
 
 void SystemClock_Config(void);
 
@@ -22,6 +23,20 @@ int main(void)
                               GPIO_MODE_OUTPUT_PP,
                               GPIO_NOPULL,
                               GPIO_SPEED_FREQ_LOW};   
+  GPIO_InitTypeDef initPC7 = {GPIO_PIN_7,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW}; 
+  GPIO_InitTypeDef initPC8 = {GPIO_PIN_8,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};                            
+  GPIO_InitTypeDef initPC9 = {GPIO_PIN_9,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW}; 
+
+
   GPIO_InitTypeDef initPB10 = {GPIO_PIN_10,
                               GPIO_MODE_AF_PP,
                               GPIO_NOPULL,
@@ -31,16 +46,24 @@ int main(void)
                               GPIO_NOPULL,
                               GPIO_SPEED_FREQ_LOW};                                                       
   My_HAL_GPIO_Init(GPIOC, &initPC6);
+  My_HAL_GPIO_Init(GPIOC, &initPC7);
+  My_HAL_GPIO_Init(GPIOC, &initPC8);
+  My_HAL_GPIO_Init(GPIOC, &initPC9);
+
   My_HAL_GPIO_Init(GPIOB, &initPB10);
   My_HAL_GPIO_Init(GPIOB, &initPB11);
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
 
   while (1)
   {
-    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+    toggle_LED();
+    //My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
     HAL_Delay(600);
     //transmit_char('A');
-    transmit_string("This is a Test \n");
+    //transmit_string("This is a Test \n\0");
    
   }
   return -1;
@@ -71,7 +94,7 @@ void initialize_USART(void)
 
 void transmit_char(char character)
 {
-  while (!(USART3->ISR & USART_ISR_TXE)) { }
+  while (!(USART3->ISR & USART_ISR_TXE)) {}
   USART3->TDR = character;
 }
 
@@ -82,6 +105,31 @@ void transmit_string(char* string)
     transmit_char(*string++);
   } 
   return;
+}
+
+void toggle_LED(void)
+{
+  uint16_t data;
+  while (!(USART3->ISR & USART_ISR_RXNE)) {}
+  
+  data = USART3->RDR;
+  switch(data) {
+  case 'r':
+    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+    break;
+  case 'b':
+    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+    break;
+  case 'o':
+    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+    break;
+  case 'g':
+    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+    break;
+  default:
+    transmit_string("Error! No LED exists of that color");
+    break;
+  }
 }
 
 
