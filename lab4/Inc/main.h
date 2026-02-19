@@ -7,7 +7,7 @@ extern "C" {
 
 void Error_Handler(void);
 void configure_GPIO_AFR(void);
-void configure_RCC(void);
+void initialize_USART(void);
 
 #ifdef __cplusplus
 }

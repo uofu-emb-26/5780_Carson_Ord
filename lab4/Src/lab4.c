@@ -51,12 +51,20 @@ void configure_GPIO_AFR(void)
   GPIOB->AFR[1] |= (0x4 << ( 3 * 4 )); // PB11
 }
 
-void configure_RCC(void)
+void initialize_USART(void)
 {
+  RCC->APB1ENR &= 0x12;
+  RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
 
+  uint32_t freq = HAL_RCC_GetHCLKFreq();
+  uint32_t baud = 115200;
+  USART3->BRR = freq / baud;
 
-  
+  USART3->CR1 |= USART_CR1_TE; // Transmitter Enable
+  USART3->CR1 |= USART_CR1_RE; // Receiver Enable
+  USART3->CR1 |= USART_CR1_UE; // USART Enable
 }
+
 
 
 
