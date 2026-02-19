@@ -15,12 +15,23 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
   HAL_RCC_GPIOC_CLK_ENABLE(); 
+  configure_GPIO_AFR();
 
   GPIO_InitTypeDef initPC6 = {GPIO_PIN_6,
                               GPIO_MODE_OUTPUT_PP,
                               GPIO_NOPULL,
                               GPIO_SPEED_FREQ_LOW};   
+  GPIO_InitTypeDef initPB10 = {GPIO_PIN_10,
+                              GPIO_MODE_AF_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};        
+  GPIO_InitTypeDef initPB11 = {GPIO_PIN_11,
+                              GPIO_MODE_AF_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};                                                       
   My_HAL_GPIO_Init(GPIOC, &initPC6);
+  My_HAL_GPIO_Init(GPIOB, &initPB10);
+  My_HAL_GPIO_Init(GPIOB, &initPB11);
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
 
   while (1)
@@ -30,6 +41,25 @@ int main(void)
   }
   return -1;
 }
+
+void configure_GPIO_AFR(void)
+{
+  GPIOB->AFR[1] &= (0xF << ( 2 * 4 )); // PB10
+  GPIOB->AFR[1] &= (0xF << ( 3 * 4 )); // PB11
+
+  GPIOB->AFR[1] |= (0x4 << ( 2 * 4 )); // PB10
+  GPIOB->AFR[1] |= (0x4 << ( 3 * 4 )); // PB11
+}
+
+void configure_RCC(void)
+{
+
+
+  
+}
+
+
+
 
 /**
   * @brief System Clock Configuration
