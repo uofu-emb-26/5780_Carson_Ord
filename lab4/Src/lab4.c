@@ -4,8 +4,13 @@
 #include "hal_gpio.h"
 #include "hal_gpio.c"
 #include <stdio.h>
+#include "stm32f0xx_it.h"
 
 void SystemClock_Config(void);
+
+
+volatile char recRegVal;
+volatile uint16_t newDataFlag;
 
 /**
   * @brief  The application entry point.
@@ -18,6 +23,7 @@ int main(void)
   HAL_RCC_GPIO_CLK_ENABLE(); 
   configure_GPIO_AFR();
   initialize_USART();
+  void USART3_4_IRQHandler(void);
 
   GPIO_InitTypeDef initPC6 = {GPIO_PIN_6,
                               GPIO_MODE_OUTPUT_PP,
@@ -59,9 +65,14 @@ int main(void)
 
   while (1)
   {
-    toggle_LED();
+    
+    if (newDataFlag)
+    {
+      toggle_LED();
+      newDataFlag = 0;
+    }
     //My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-    HAL_Delay(600);
+    //HAL_Delay(600);
     //transmit_char('A');
     //transmit_string("This is a Test \n\0");
    
@@ -78,6 +89,7 @@ void configure_GPIO_AFR(void)
   GPIOB->AFR[1] |= (0x4 << ( 3 * 4 )); // PB11
 }
 
+/*
 void initialize_USART(void)
 {
   RCC->APB1ENR &= 0x12;
@@ -91,6 +103,36 @@ void initialize_USART(void)
   USART3->CR1 |= USART_CR1_RE; // Receiver Enable
   USART3->CR1 |= USART_CR1_UE; // USART Enable
 }
+*/ 
+
+void initialize_USART(void)
+{
+  RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+
+  uint32_t freq = HAL_RCC_GetHCLKFreq();
+  uint32_t baud = 115200;
+  USART3->BRR = freq / baud;
+
+  USART3->CR1 |= USART_CR1_TE; // Transmitter Enable
+  USART3->CR1 |= USART_CR1_RE; // Receiver Enable
+  USART3->CR1 |= USART_CR1_RXNEIE; // Receive Register Not Empty Interrupt
+  USART3->CR1 |= USART_CR1_UE; // USART Enable
+
+  __NVIC_EnableIRQ(USART3_4_IRQn);
+  __NVIC_SetPriority(USART3_4_IRQn, 3);
+
+}
+
+
+void USART3_4_IRQHandler(void) 
+{
+  if (USART3->ISR & USART_ISR_RXNE)
+  {
+    recRegVal = (char)USART3->RDR;
+    newDataFlag = 1;
+  }
+}
+
 
 void transmit_char(char character)
 {
@@ -109,11 +151,12 @@ void transmit_string(char* string)
 
 void toggle_LED(void)
 {
-  uint16_t data;
-  while (!(USART3->ISR & USART_ISR_RXNE)) {}
-  
-  data = USART3->RDR;
-  switch(data) {
+  //uint16_t data;
+  //while (!(USART3->ISR & USART_ISR_RXNE)) {}
+  //data = USART3->RDR;
+
+
+  switch(recRegVal) {
   case 'r':
     My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
     break;
@@ -131,7 +174,6 @@ void toggle_LED(void)
     break;
   }
 }
-
 
 /**
   * @brief System Clock Configuration

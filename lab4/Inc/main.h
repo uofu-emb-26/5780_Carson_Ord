@@ -11,6 +11,7 @@ void initialize_USART(void);
 void transmit_char(char character);
 void transmit_string(char* string);
 void toggle_LED(void);
+void command_parser(void);
 
 #ifdef __cplusplus
 }
