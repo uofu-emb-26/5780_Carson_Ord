@@ -35,12 +35,12 @@ int main(void)
   My_HAL_GPIO_Init(GPIOB, &initPB11);
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
 
-  
   while (1)
   {
     My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
     HAL_Delay(600);
-    transmit_char('A');
+    //transmit_char('A');
+    transmit_string("This is a Test \n");
    
   }
   return -1;
@@ -75,6 +75,14 @@ void transmit_char(char character)
   USART3->TDR = character;
 }
 
+void transmit_string(char* string)
+{
+  while (*string != 0)
+  {
+    transmit_char(*string++);
+  } 
+  return;
+}
 
 
 /**

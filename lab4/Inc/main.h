@@ -9,6 +9,7 @@ void Error_Handler(void);
 void configure_GPIO_AFR(void);
 void initialize_USART(void);
 void transmit_char(char character);
+void transmit_string(char* string);
 
 #ifdef __cplusplus
 }
