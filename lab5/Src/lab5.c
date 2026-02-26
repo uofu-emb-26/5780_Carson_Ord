@@ -17,22 +17,59 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
   HAL_RCC_GPIO_CLK_ENABLE(); 
+  Init_I2C();
 
-  GPIO_InitTypeDef initPC6 = {GPIO_PIN_6,
+  GPIO_InitTypeDef initPB6 = {GPIO_PIN_6,
+                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+  GPIO_InitTypeDef initPB7 = {GPIO_PIN_7,
+                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};                            
+ GPIO_InitTypeDef initPC9 = {GPIO_PIN_9,
                               GPIO_MODE_OUTPUT_PP,
                               GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW}; 
-  My_HAL_GPIO_Init(GPIOC, &initPC6);       
-  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);                     
+                              GPIO_SPEED_FREQ_LOW};
+  My_HAL_GPIO_Init(GPIOB, &initPB6);
+  My_HAL_GPIO_Init(GPIOB, &initPB7);      
+  My_HAL_GPIO_Init(GPIOC, &initPC9); 
+  My_HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+  My_HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);     
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);                          
 
   while (1)
   {
-    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
     HAL_Delay(600);
  
   }
   return -1;
 }
+
+void Init_I2C()
+{
+  GPIOB->AFR[0] &= (0xF << ( 6 * 4 )); // PB6
+  GPIOB->AFR[0] &= (0xF << ( 7 * 4 )); // PB7
+
+  GPIOB->AFR[0] |= (0x1 << ( 6 * 4 )); // PB6
+  GPIOB->AFR[0] |= (0x1 << ( 7 * 4 )); // PB7
+
+  RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
+
+  I2C1->CR1 &= ~I2C_CR1_PE;
+
+  uint32_t PRESC = 0x10000000;
+  uint32_t SCLDEL = 0x00400000;
+  uint32_t SDADEL = 0x00020000;
+  uint32_t SCLH = 0x00000F00;
+  uint32_t SCLL = 0x00000013;
+
+  I2C1->TIMINGR = PRESC + SCLDEL + SDADEL + SCLH + SCLL;
+
+  I2C1->CR1 |= I2C_CR1_PE;
+}
+
 
 
 
