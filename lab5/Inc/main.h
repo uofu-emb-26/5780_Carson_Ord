@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 void Error_Handler(void);
+void Init_GPIO(void);
 void Init_I2C(void);
 void Setup_I2C_Transaction(void);
 

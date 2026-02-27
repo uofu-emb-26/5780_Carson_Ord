@@ -19,25 +19,10 @@ int main(void)
   HAL_RCC_GPIO_CLK_ENABLE(); 
   Init_I2C();
   Setup_I2C_Transaction();
+  Init_GPIO();                      
 
-  GPIO_InitTypeDef initPB6 = {GPIO_PIN_6,
-                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
-                              GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW};
-  GPIO_InitTypeDef initPB7 = {GPIO_PIN_7,
-                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
-                              GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW};                            
- GPIO_InitTypeDef initPC9 = {GPIO_PIN_9,
-                              GPIO_MODE_OUTPUT_PP,
-                              GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW};
-  My_HAL_GPIO_Init(GPIOB, &initPB6);
-  My_HAL_GPIO_Init(GPIOB, &initPB7);      
-  My_HAL_GPIO_Init(GPIOC, &initPC9); 
-  My_HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
-  My_HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);     
-  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);                          
+  My_HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
 
   while (1)
   {
@@ -47,6 +32,49 @@ int main(void)
   }
   return -1;
 }
+
+void Init_GPIO()
+{
+  GPIO_InitTypeDef initPB6 = {GPIO_PIN_6,
+                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+  GPIO_InitTypeDef initPB7 = {GPIO_PIN_7,
+                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};        
+  GPIO_InitTypeDef initPB11 = {GPIO_PIN_11,
+                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW,
+                              GPIO_AF1_I2C2};
+  GPIO_InitTypeDef initPB13 = {GPIO_PIN_13,
+                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW,
+                              GPIO_AF5_I2C2};    
+  GPIO_InitTypeDef initPB14 = {GPIO_PIN_14,
+                              GPIO_MODE_OUTPUT_PP, // Alternate Open-Drain 
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW,
+                              GPIO_AF5_I2C2};                                
+  GPIO_InitTypeDef initPC0 = {GPIO_PIN_0,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};                             
+  GPIO_InitTypeDef initPC9 = {GPIO_PIN_9,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+  My_HAL_GPIO_Init(GPIOB, &initPB6);
+  My_HAL_GPIO_Init(GPIOB, &initPB7);
+  My_HAL_GPIO_Init(GPIOB, &initPB11); 
+  My_HAL_GPIO_Init(GPIOB, &initPB13);       
+  My_HAL_GPIO_Init(GPIOB, &initPB14);
+  My_HAL_GPIO_Init(GPIOC, &initPC0);  
+  My_HAL_GPIO_Init(GPIOC, &initPC9);   
+}
+
 
 void Init_I2C()
 {
