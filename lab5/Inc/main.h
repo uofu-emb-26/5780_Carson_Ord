@@ -7,6 +7,7 @@ extern "C" {
 
 void Error_Handler(void);
 void Init_I2C(void);
+void Setup_I2C_Transaction(void);
 
 #ifdef __cplusplus
 }

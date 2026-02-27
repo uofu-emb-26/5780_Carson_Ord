@@ -18,6 +18,7 @@ int main(void)
   SystemClock_Config();
   HAL_RCC_GPIO_CLK_ENABLE(); 
   Init_I2C();
+  Setup_I2C_Transaction();
 
   GPIO_InitTypeDef initPB6 = {GPIO_PIN_6,
                               GPIO_MODE_AF_OD, // Alternate Open-Drain 
@@ -68,6 +69,21 @@ void Init_I2C()
   I2C1->TIMINGR = PRESC + SCLDEL + SDADEL + SCLH + SCLL;
 
   I2C1->CR1 |= I2C_CR1_PE;
+}
+
+void Setup_I2C_Transaction()
+{
+  I2C1->CR2 &= ~(I2C_CR2_SADD); // Set slave address
+  I2C1->CR2 |= (0x69 << 1);
+
+  I2C1->CR2 &= ~(I2C_CR2_NBYTES); // Set number of data bytes
+  I2C1->CR2 |= (1 << 16);
+
+  I2C1->CR2 &= ~(I2C_CR2_RD_WRN); // Configure write operation
+
+  I2C1->CR2 &= I2C_CR2_AUTOEND; // Do not set AUTOEND bit
+
+  I2C1->CR2 |= I2C_CR2_START; // Set start bit
 }
 
 
