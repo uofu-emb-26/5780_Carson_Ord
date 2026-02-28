@@ -7,6 +7,7 @@
 #include "stm32f0xx_it.h"
 
 void SystemClock_Config(void);
+volatile uint32_t WHO_AM_I = 0;
 
 /**
   * @brief  The application entry point.
@@ -17,101 +18,116 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
   HAL_RCC_GPIO_CLK_ENABLE(); 
+  Init_GPIO(); 
   Init_I2C();
   Setup_I2C_Transaction();
-  Init_GPIO();                      
-
-  My_HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
 
   while (1)
   {
-    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
-    HAL_Delay(600);
  
   }
   return -1;
 }
 
 void Init_GPIO()
-{
-  GPIO_InitTypeDef initPB6 = {GPIO_PIN_6,
-                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
-                              GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW};
-  GPIO_InitTypeDef initPB7 = {GPIO_PIN_7,
-                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
-                              GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW};        
+{  
   GPIO_InitTypeDef initPB11 = {GPIO_PIN_11,
-                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
+                              0x02,
                               GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW,
-                              GPIO_AF1_I2C2};
+                              GPIO_SPEED_FREQ_LOW}; 
   GPIO_InitTypeDef initPB13 = {GPIO_PIN_13,
-                              GPIO_MODE_AF_OD, // Alternate Open-Drain 
+                              0x02,
                               GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW,
-                              GPIO_AF5_I2C2};    
+                              GPIO_SPEED_FREQ_LOW};                                
   GPIO_InitTypeDef initPB14 = {GPIO_PIN_14,
-                              GPIO_MODE_OUTPUT_PP, // Alternate Open-Drain 
+                              GPIO_MODE_OUTPUT_PP,
                               GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW,
-                              GPIO_AF5_I2C2};                                
+                              GPIO_SPEED_FREQ_LOW};    
+  GPIO_InitTypeDef initPB15 = {GPIO_PIN_15,
+                              GPIO_MODE_INPUT,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};                                                          
   GPIO_InitTypeDef initPC0 = {GPIO_PIN_0,
                               GPIO_MODE_OUTPUT_PP,
                               GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW};                             
-  GPIO_InitTypeDef initPC9 = {GPIO_PIN_9,
-                              GPIO_MODE_OUTPUT_PP,
-                              GPIO_NOPULL,
-                              GPIO_SPEED_FREQ_LOW};
-  My_HAL_GPIO_Init(GPIOB, &initPB6);
-  My_HAL_GPIO_Init(GPIOB, &initPB7);
+                              GPIO_SPEED_FREQ_LOW};    
+                              
+  GPIOB->OTYPER |= GPIO_OTYPER_OT_11;
+  GPIOB->OTYPER |= GPIO_OTYPER_OT_13;
+
+  GPIOB->AFR[1] &= ~(0xF << (3 * 4)); 
+  GPIOB->AFR[1] &= ~(0xF << (5 * 4)); 
+
+  GPIOB->AFR[1] |=  (0x1 << (3 * 4)); // PB11 to AF1
+  GPIOB->AFR[1] |=  (0x5 << (5 * 4)); // PB13 to AF5                             
+
   My_HAL_GPIO_Init(GPIOB, &initPB11); 
   My_HAL_GPIO_Init(GPIOB, &initPB13);       
   My_HAL_GPIO_Init(GPIOB, &initPB14);
+  My_HAL_GPIO_Init(GPIOB, &initPB15);
   My_HAL_GPIO_Init(GPIOC, &initPC0);  
-  My_HAL_GPIO_Init(GPIOC, &initPC9);   
+
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
+  My_HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
 }
 
 
 void Init_I2C()
 {
-  GPIOB->AFR[0] &= (0xF << ( 6 * 4 )); // PB6
-  GPIOB->AFR[0] &= (0xF << ( 7 * 4 )); // PB7
+  RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
 
-  GPIOB->AFR[0] |= (0x1 << ( 6 * 4 )); // PB6
-  GPIOB->AFR[0] |= (0x1 << ( 7 * 4 )); // PB7
+  I2C2->CR1 &= ~I2C_CR1_PE;
 
-  RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
+  RCC->APB1RSTR |= RCC_APB1RSTR_I2C2RST;
+  RCC->APB1RSTR &= ~RCC_APB1RSTR_I2C2RST;
 
-  I2C1->CR1 &= ~I2C_CR1_PE;
+  uint32_t PRESC = 1;
+  uint32_t SCLDEL = 4;
+  uint32_t SDADEL = 2;
+  uint32_t SCLH = 0x0F;
+  uint32_t SCLL = 0x13;
 
-  uint32_t PRESC = 0x10000000;
-  uint32_t SCLDEL = 0x00400000;
-  uint32_t SDADEL = 0x00020000;
-  uint32_t SCLH = 0x00000F00;
-  uint32_t SCLL = 0x00000013;
+  I2C2->TIMINGR = (PRESC << 28) | (SCLDEL << 20) | (SDADEL << 16) | (SCLH << 8) | (SCLL << 0);
 
-  I2C1->TIMINGR = PRESC + SCLDEL + SDADEL + SCLH + SCLL;
-
-  I2C1->CR1 |= I2C_CR1_PE;
+  I2C2->CR1 |= I2C_CR1_PE;
 }
 
 void Setup_I2C_Transaction()
-{
-  I2C1->CR2 &= ~(I2C_CR2_SADD); // Set slave address
-  I2C1->CR2 |= (0x69 << 1);
+{ 
+  I2C2->CR2 &= ~(I2C_CR2_SADD);
+  I2C2->CR2 &= ~(I2C_CR2_NBYTES);
+  I2C2->CR2 &= ~(I2C_CR2_RD_WRN); // Configure write operation
+  I2C2->CR2 &= ~((0xFF << 16) | (0x3FF << 0));
+  I2C2->CR2 |= (0x69 << 1); // Set slave address
+  I2C2->CR2 |= (1 << 16); // Set number of data bytes
+  
+  I2C2->CR2 |= I2C_CR2_START; // Set start bit
 
-  I2C1->CR2 &= ~(I2C_CR2_NBYTES); // Set number of data bytes
-  I2C1->CR2 |= (1 << 16);
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_TXIS))){}
 
-  I2C1->CR2 &= ~(I2C_CR2_RD_WRN); // Configure write operation
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
 
-  I2C1->CR2 &= I2C_CR2_AUTOEND; // Do not set AUTOEND bit
+  I2C2->TXDR = 0x0F; // Write WHO_AM_I address
 
-  I2C1->CR2 |= I2C_CR2_START; // Set start bit
+  while (!(I2C2->ISR & I2C_ISR_TC)) { } // Wait until TC flag is set
+
+  I2C2->CR2 &= ~(I2C_CR2_SADD); 
+  I2C2->CR2 &= ~(I2C_CR2_NBYTES);
+  I2C2->CR2 &= ~(I2C_CR2_RD_WRN);
+
+  I2C2->CR2 |= (0x69 << 1); 
+  I2C2->CR2 |= (1 << 16); 
+  I2C2->CR2 |= I2C_CR2_RD_WRN; // Configure read operation
+  I2C2->CR2 |= I2C_CR2_START;
+
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_RXNE))) {}
+
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+
+  WHO_AM_I = I2C2->RXDR;
+  
+  I2C2->CR1 |= I2C_CR1_PE;
+  I2C2->CR2 |= I2C_CR2_STOP;
 }
 
 
