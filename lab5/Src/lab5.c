@@ -4,10 +4,22 @@
 #include "hal_gpio.h"
 #include "hal_gpio.c"
 #include <stdio.h>
+#include <stdint.h>
 #include "stm32f0xx_it.h"
 
 void SystemClock_Config(void);
 volatile uint32_t WHO_AM_I = 0;
+volatile uint32_t i2c_read_data = 0;
+
+volatile uint32_t x_axis_data_low = 0;
+volatile uint32_t x_axis_data_high = 0;
+volatile uint32_t x_axis_data = 0;
+
+volatile uint32_t y_axis_data_low = 0;
+volatile uint32_t y_axis_data_high = 0;
+volatile uint32_t y_axis_data = 0;
+
+
 
 /**
   * @brief  The application entry point.
@@ -21,6 +33,7 @@ int main(void)
   Init_GPIO(); 
   Init_I2C();
   Setup_I2C_Transaction();
+  I2C_Reg_Write(0x20, 0x0B);
 
   while (1)
   {
@@ -130,7 +143,70 @@ void Setup_I2C_Transaction()
   I2C2->CR2 |= I2C_CR2_STOP;
 }
 
+void I2C_Reg_Write(uint8_t reg_addr, uint8_t data)
+{
+  I2C2->CR2 &= ~(I2C_CR2_SADD);
+  I2C2->CR2 &= ~(I2C_CR2_NBYTES);
+  I2C2->CR2 &= ~(I2C_CR2_RD_WRN); // Configure write operation
+  I2C2->CR2 &= ~((0xFF << 16) | (0x3FF << 0));
+  I2C2->CR2 |= (0x69 << 1); // Set slave address
+  I2C2->CR2 |= (2 << 16); // Set number of data bytes
+  I2C2->CR2 |= I2C_CR2_START;
 
+  // Byte 1 (Address)
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_TXIS))){}
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+  I2C2->TXDR = reg_addr; // Write CTROL_REG1 address
+
+  // Byte 2 (Data)
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_TXIS))){}
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+  I2C2->TXDR = data; // Write CTROL_REG1 address
+
+  while (!(I2C2->ISR & I2C_ISR_TC)) { } // Wait until TC flag is set
+  I2C2->CR2 |= I2C_CR2_STOP;
+}
+
+void I2C_Reg_Read(uint8_t reg_addr, uint8_t data)
+{
+  // Write
+  I2C2->CR2 &= ~(I2C_CR2_SADD);
+  I2C2->CR2 &= ~(I2C_CR2_NBYTES);
+  I2C2->CR2 &= ~(I2C_CR2_RD_WRN); // Configure write operation
+  I2C2->CR2 &= ~((0xFF << 16) | (0x3FF << 0));
+  I2C2->CR2 |= (0x69 << 1); // Set slave address
+  I2C2->CR2 |= (1<< 16); // Set number of data bytes
+  I2C2->CR2 |= I2C_CR2_START;
+
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_TXIS))){}
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+  I2C2->TXDR = reg_addr; // Write CTRL_REG1 address
+
+  while (!(I2C2->ISR & I2C_ISR_TC)) { } // Wait until TC flag is set
+
+  // Read
+  I2C2->CR2 &= ~(I2C_CR2_SADD);
+  I2C2->CR2 &= ~(I2C_CR2_NBYTES);
+  I2C2->CR2 &= ~(I2C_CR2_RD_WRN);
+  I2C2->CR2 &= ~((0xFF << 16) | (0x3FF << 0));
+  I2C2->CR2 |= (0x69 << 1); // Set slave address
+  I2C2->CR2 |= (2 << 16); // Set number of data bytes
+  I2C2->CR2 |= I2C_CR2_RD_WRN; // Configure read operation
+  I2C2->CR2 |= I2C_CR2_START;
+
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_RXNE))){}
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+  uint8_t i2c_read_data_low = I2C2->RXDR; 
+
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_RXNE))){}
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+  uint8_t i2c_read_data_high = I2C2->RXDR; 
+
+  i2c_read_data = (i2c_read_data_high << 8) | i2c_read_data_low;
+
+  while (!(I2C2->ISR & I2C_ISR_TC)) {}
+  I2C2->CR2 |= I2C_CR2_STOP;
+}
 
 
 /**
