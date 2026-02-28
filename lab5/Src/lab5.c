@@ -11,13 +11,13 @@ void SystemClock_Config(void);
 volatile uint32_t WHO_AM_I = 0;
 volatile uint32_t i2c_read_data = 0;
 
-volatile uint32_t x_axis_data_low = 0;
-volatile uint32_t x_axis_data_high = 0;
-volatile uint32_t x_axis_data = 0;
+volatile uint8_t x_axis_data_low = 0;
+volatile uint8_t x_axis_data_high = 0;
+volatile uint16_t x_axis_data = 0;
 
-volatile uint32_t y_axis_data_low = 0;
-volatile uint32_t y_axis_data_high = 0;
-volatile uint32_t y_axis_data = 0;
+volatile uint8_t y_axis_data_low = 0;
+volatile uint8_t y_axis_data_high = 0;
+volatile uint16_t y_axis_data = 0;
 
 
 
@@ -32,18 +32,29 @@ int main(void)
   HAL_RCC_GPIO_CLK_ENABLE(); 
   Init_GPIO(); 
   Init_I2C();
-  Setup_I2C_Transaction();
+  //Setup_I2C_Transaction();
   I2C_Reg_Write(0x20, 0x0B);
 
+  for (volatile int i = 0; i<300000; i++);
   while (1)
   {
- 
+    I2C_X_Y_Axis_Read();
+    Determine_Active_LED();
+    HAL_Delay(100);
+    
+    if (x_axis_data == 99999) { 
+        I2C2->CR1 = 0;
+    }
+    if (y_axis_data == 99999) { 
+        I2C2->CR1 = 0;}
+    //My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+    
   }
   return -1;
 }
 
 void Init_GPIO()
-{  
+{ 
   GPIO_InitTypeDef initPB11 = {GPIO_PIN_11,
                               0x02,
                               GPIO_NOPULL,
@@ -64,7 +75,6 @@ void Init_GPIO()
                               GPIO_MODE_OUTPUT_PP,
                               GPIO_NOPULL,
                               GPIO_SPEED_FREQ_LOW};    
-                              
   GPIOB->OTYPER |= GPIO_OTYPER_OT_11;
   GPIOB->OTYPER |= GPIO_OTYPER_OT_13;
 
@@ -82,6 +92,29 @@ void Init_GPIO()
 
   My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
   My_HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+
+
+  // LEDs
+  GPIO_InitTypeDef initPC6 = {GPIO_PIN_6,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+  GPIO_InitTypeDef initPC7 = {GPIO_PIN_7,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+  GPIO_InitTypeDef initPC8 = {GPIO_PIN_8,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};                                                              
+  GPIO_InitTypeDef initPC9 = {GPIO_PIN_9,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};   
+  My_HAL_GPIO_Init(GPIOC, &initPC6);                                                      
+  My_HAL_GPIO_Init(GPIOC, &initPC7);                                                      
+  My_HAL_GPIO_Init(GPIOC, &initPC8);                                                      
+  My_HAL_GPIO_Init(GPIOC, &initPC9);                                                      
 }
 
 
@@ -207,6 +240,101 @@ void I2C_Reg_Read(uint8_t reg_addr, uint8_t data)
   while (!(I2C2->ISR & I2C_ISR_TC)) {}
   I2C2->CR2 |= I2C_CR2_STOP;
 }
+
+void I2C_X_Y_Axis_Read()
+{
+  // Write
+  I2C2->CR2 &= ~(I2C_CR2_SADD);
+  I2C2->CR2 &= ~(I2C_CR2_NBYTES);
+  I2C2->CR2 &= ~(I2C_CR2_RD_WRN); // Configure write operation
+  I2C2->CR2 &= ~((0xFF << 16) | (0x3FF << 0));
+  I2C2->CR2 |= (0x69 << 1); // Set slave address
+  I2C2->CR2 |= (1 << 16); // Set number of data bytes
+  //I2C2->CR2 |= I2C_CR2_START;
+
+  I2C2->CR2 = 0; 
+  I2C2->CR2 |= (0x69 << 1) | (1 << 16); // 1 Byte, Write Mode
+  I2C2->CR2 |= I2C_CR2_START;
+
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_TXIS))){}
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+  I2C2->TXDR = 0xA8; // X-Axis Address
+
+  while (!(I2C2->ISR & I2C_ISR_TC)) {} // Wait until TC flag is set
+
+  // Read
+  I2C2->CR2 &= ~(I2C_CR2_SADD);
+  I2C2->CR2 &= ~(I2C_CR2_NBYTES);
+  I2C2->CR2 &= ~(I2C_CR2_RD_WRN);
+  I2C2->CR2 &= ~((0xFF << 16) | (0x3FF << 0));
+  I2C2->CR2 |= (0x69 << 1); // Set slave address
+  I2C2->CR2 |= (4 << 16); // Read 4 data bytes
+  I2C2->CR2 |= I2C_CR2_RD_WRN; // Configure read operation
+  I2C2->CR2 |= I2C_CR2_START;
+
+  // X-Axis
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_RXNE))){}
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+  x_axis_data_low = I2C2->RXDR; 
+
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_RXNE))){}
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+  x_axis_data_high = I2C2->RXDR; 
+
+  // Y-Axis
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_RXNE))){}
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+  y_axis_data_low = I2C2->RXDR; 
+
+  while (!(I2C2->ISR & (I2C_ISR_NACKF | I2C_ISR_RXNE))){}
+  if (I2C2->ISR & I2C_ISR_NACKF) { return; }
+  y_axis_data_high = I2C2->RXDR; 
+
+
+  while (!(I2C2->ISR & I2C_ISR_TC)) {}
+  I2C2->CR2 |= I2C_CR2_STOP;
+
+}
+
+void Determine_Active_LED()
+{
+  // Combine bytes
+  int16_t x_axis_data = (int16_t)( ((uint16_t)x_axis_data_high << 8) | (uint16_t)x_axis_data_low );
+  int16_t y_axis_data = (int16_t)( ((uint16_t)y_axis_data_high << 8) | (uint16_t)y_axis_data_low );
+
+  uint16_t threshold = 10000;
+
+  if ((x_axis_data > threshold))
+  {
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+  }
+  else  if (x_axis_data < -threshold)
+  {
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+  }
+  else 
+  {
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+  }
+
+  if (y_axis_data > threshold){
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+  }
+  else if (y_axis_data < -threshold){
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
+  }
+  else 
+  {
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+  }
+}
+
 
 
 /**
