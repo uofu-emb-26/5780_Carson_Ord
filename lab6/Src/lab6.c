@@ -9,6 +9,9 @@
 
 void SystemClock_Config(void);
 
+
+
+
 /**
   * @brief  The application entry point.
   * @retval int
@@ -21,11 +24,36 @@ int main(void)
   SystemClock_Config();
   HAL_RCC_GPIO_CLK_ENABLE(); 
   Init_GPIO();
+  Init_ADC();
+  Calibrate_ADC();
 
   while (1)
   {
-    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-    HAL_Delay(500);
+    volatile uint8_t pot_reading = ADC1->DR;
+
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+
+    if (pot_reading > 50)
+    {
+      My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+    }
+     if (pot_reading > 100)
+    {
+      My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+    }
+     if (pot_reading > 150)
+    {
+      My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
+    }
+     if (pot_reading > 200)
+    {
+      My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+    }
+
+    HAL_Delay(100);
   }
   return -1;
 }
@@ -53,6 +81,49 @@ void Init_GPIO()
   My_HAL_GPIO_Init(GPIOC, &initPC7);                                                      
   My_HAL_GPIO_Init(GPIOC, &initPC8);                                                      
   My_HAL_GPIO_Init(GPIOC, &initPC9);                                                      
+}
+
+void Init_ADC(void)
+{
+  GPIO_InitTypeDef initPA1 = {GPIO_PIN_1,
+                              GPIO_MODE_ANALOG,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+  My_HAL_GPIO_Init(GPIOA, &initPA1);   
+  
+  RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+
+  ADC1->CFGR1 |= ADC_CFGR1_RES_1;
+  ADC1->CFGR1 &= ~ADC_CFGR1_RES_0; // 8-bit resolution
+
+  ADC1->CFGR1 |= ADC_CFGR1_CONT; // Continuous conversion
+
+  ADC1->CFGR1 &= ~ADC_CFGR1_EXTEN; // Software trigger
+
+  ADC1->CHSELR |= ADC_CHSELR_CHSEL1; // Select channel 1
+}
+
+void Calibrate_ADC(void)
+{
+  // Disable ADC before calibrating
+  if ((ADC1->CR & ADC_CR_ADEN) != 0)
+  {
+    ADC1->CR |= ADC_CR_ADDIS;
+    while ((ADC1->CR & ADC_CR_ADEN) != 0);
+  }
+
+  // Start calibration
+  ADC1->CR |= ADC_CR_ADCAL;
+  while ((ADC1->CR & ADC_CR_ADCAL) != 0);
+
+  // Enable ADC
+  ADC1->ISR |= ADC_ISR_ADRDY;
+  ADC1->CR |= ADC_CR_ADEN;
+  while ((ADC1->ISR & ADC_ISR_ADRDY) == 0);
+
+  // Start measuring
+  ADC1->CR |= ADC_CR_ADSTART;
+
 }
 
 
