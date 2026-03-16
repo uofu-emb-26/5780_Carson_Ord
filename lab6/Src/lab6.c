@@ -1,5 +1,11 @@
 #include "main.h"
 #include "stm32f0xx_hal.h"
+#include <stm32f0xx_hal_conf.h>
+#include "hal_gpio.h"
+#include "hal_gpio.c"
+#include <stdio.h>
+#include <stdint.h>
+#include "stm32f0xx_it.h"
 
 void SystemClock_Config(void);
 
@@ -9,17 +15,47 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  
+
   HAL_Init();
-  /* Configure the system clock */
   SystemClock_Config();
+  HAL_RCC_GPIO_CLK_ENABLE(); 
+  Init_GPIO();
 
   while (1)
   {
- 
+    My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+    HAL_Delay(500);
   }
   return -1;
 }
+
+void Init_GPIO()
+{ 
+  // LEDs
+  GPIO_InitTypeDef initPC6 = {GPIO_PIN_6,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+  GPIO_InitTypeDef initPC7 = {GPIO_PIN_7,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+  GPIO_InitTypeDef initPC8 = {GPIO_PIN_8,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};                                                              
+  GPIO_InitTypeDef initPC9 = {GPIO_PIN_9,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};   
+  My_HAL_GPIO_Init(GPIOC, &initPC6);                                                      
+  My_HAL_GPIO_Init(GPIOC, &initPC7);                                                      
+  My_HAL_GPIO_Init(GPIOC, &initPC8);                                                      
+  My_HAL_GPIO_Init(GPIOC, &initPC9);                                                      
+}
+
+
 
 /**
   * @brief System Clock Configuration

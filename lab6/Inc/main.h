@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 void Error_Handler(void);
+void Init_GPIO(void);
 
 #ifdef __cplusplus
 }
