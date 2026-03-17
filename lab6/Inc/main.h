@@ -9,6 +9,8 @@ void Error_Handler(void);
 void Init_GPIO(void);
 void Init_ADC(void);
 void Calibrate_ADC(void);
+void Pot_LED_CTRL(void);
+void Waveform_Gen(void);
 
 #ifdef __cplusplus
 }

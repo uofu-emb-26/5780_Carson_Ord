@@ -9,8 +9,13 @@
 
 void SystemClock_Config(void);
 
-
-
+volatile uint8_t index = 0;
+volatile uint8_t sine_wave[32] = {
+  132, 150, 175, 190, 215, 230, 245, 251,
+  254, 251, 245, 230, 215, 190, 175, 150,
+  132, 105, 75, 55, 40, 20, 10, 2,
+  0, 2, 10, 20, 40, 55, 75, 105 
+};
 
 /**
   * @brief  The application entry point.
@@ -18,8 +23,6 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-  
-
   HAL_Init();
   SystemClock_Config();
   HAL_RCC_GPIO_CLK_ENABLE(); 
@@ -29,31 +32,10 @@ int main(void)
 
   while (1)
   {
-    volatile uint8_t pot_reading = ADC1->DR;
-
-    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
-    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
-    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
-    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
-
-    if (pot_reading > 50)
-    {
-      My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-    }
-     if (pot_reading > 100)
-    {
-      My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
-    }
-     if (pot_reading > 150)
-    {
-      My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
-    }
-     if (pot_reading > 200)
-    {
-      My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
-    }
-
-    HAL_Delay(100);
+    Pot_LED_CTRL();
+    Waveform_Gen();
+    //My_HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+    //HAL_Delay(500);
   }
   return -1;
 }
@@ -90,7 +72,14 @@ void Init_ADC(void)
                               GPIO_NOPULL,
                               GPIO_SPEED_FREQ_LOW};
   My_HAL_GPIO_Init(GPIOA, &initPA1);   
+
+  GPIO_InitTypeDef initPA4 = {GPIO_PIN_4,
+                              GPIO_MODE_ANALOG,
+                              GPIO_NOPULL,
+                              GPIO_SPEED_FREQ_LOW};
+  My_HAL_GPIO_Init(GPIOA, &initPA4); 
   
+  //6.1: Checkoff 1
   RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
 
   ADC1->CFGR1 |= ADC_CFGR1_RES_1;
@@ -101,6 +90,15 @@ void Init_ADC(void)
   ADC1->CFGR1 &= ~ADC_CFGR1_EXTEN; // Software trigger
 
   ADC1->CHSELR |= ADC_CHSELR_CHSEL1; // Select channel 1
+
+  //6.2: Checkoff 2
+  RCC->APB1ENR |= RCC_APB1ENR_DACEN;
+
+  DAC->CR |= DAC_CR_TEN1; // Enable trigger
+  DAC->CR |= DAC_CR_TSEL1; // Software trigger
+
+  DAC->CR |= DAC_CR_EN1; // Select channel 1
+
 }
 
 void Calibrate_ADC(void)
@@ -123,9 +121,51 @@ void Calibrate_ADC(void)
 
   // Start measuring
   ADC1->CR |= ADC_CR_ADSTART;
-
 }
 
+void Pot_LED_CTRL(void)
+{
+  volatile uint8_t pot_reading = ADC1->DR;
+
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+  My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+
+  if (pot_reading > 50)
+  {
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+  }
+    if (pot_reading > 100)
+  {
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+  }
+    if (pot_reading > 150)
+  {
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
+  }
+    if (pot_reading > 200)
+  {
+    My_HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+  }
+
+  HAL_Delay(100);
+}
+
+void Waveform_Gen(void)
+{
+  DAC->DHR8R1 = sine_wave[index]; // Write arr val to 8-bit reg
+  DAC->SWTRIGR |= DAC_SWTRIGR_SWTRIG1; // Update output
+
+  // Increment and reset index
+  index++;
+  if (index >= 32)
+  {
+    index = 0;
+  }
+
+  HAL_Delay(1);
+}
 
 
 /**
