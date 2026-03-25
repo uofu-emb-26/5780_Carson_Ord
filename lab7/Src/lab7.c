@@ -1,8 +1,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "stm32f4xx.h"
+#include "stm32f0xx_it.h"
 #include "motor.h"
+#include "motor.c"
 #include "SEGGER_RTT.h"
 
 /* -------------------------------------------------------------------------------------------------------------
@@ -80,13 +81,12 @@ void Lab7_Systick_Callback(void) {
  */
 volatile uint32_t encoder_count = 0;
 
-int lab7_main(void) {
+int main(void) {
 
     debouncer = 0;                          // Initialize global variables
     HAL_Init();                             // Initialize HAL internals
     LED_init();                             // Initialize LED's
     button_init();                          // Initialize button
-SEE
     motor_init();                           // Initialize motor code
 
     while (1) {
