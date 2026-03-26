@@ -4,7 +4,7 @@
  */
 #include "motor.h"
 #include "SEGGER_RTT.h"
-#include "SEGGER_RTT.c"
+//#include "SEGGER_RTT.c"
 
 volatile int16_t error_integral = 0;    // Integrated error signal
 volatile uint8_t duty_cycle = 0;    	// Output PWM duty cycle
@@ -12,8 +12,8 @@ volatile int16_t target_rpm = 0;    	// Desired speed target
 volatile int16_t motor_speed = 0;   	// Measured motor speed
 volatile int8_t adc_value = 0;      	// ADC measured motor current
 volatile int16_t error = 0;         	// Speed error signal
-volatile uint8_t Kp = 1;            	// Proportional gain
-volatile uint8_t Ki = 1;            	// Integral gain
+volatile uint8_t Kp = 7.5;            	// Proportional gain
+volatile uint8_t Ki = 5;            	// Integral gain
 
 // Sets up the entire motor drive system
 void motor_init(void) {
@@ -238,9 +238,18 @@ void PI_update(void) {
      */
 
      /// TODO: Divide the output into the proper range for output adjustment
-     
+     output = output >> 5;
+
      /// TODO: Clamp the output value between 0 and 100 
-    
+    if (output > 100)
+    {
+        output = 100;
+    }
+    else if (output < 0)
+    {
+        output = 0;
+    }
+
     pwm_setDutyCycle(output);
     duty_cycle = output;            // For debug viewing
 
